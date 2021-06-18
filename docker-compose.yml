@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+    db:
+        image: mysql
+        command: --default-authentication-plugin=mysql_native_password
+        restart: always
+        environment:
+            - MYSQL_ROOT_PASSWORD=root # username: root
+            - MYSQL_DATABASE=url_shorter
+            - MYSQL_ROOT_HOST=%
+        ports:
+            - 3306:3306
+        volumes:
+            - ./local/mysql:/var/lib/mysql
+    
+    adminer:    
+        image: adminer
+        restart: always
+        ports:
+            - 8001:8080
+
+    redis:
+        image: redis
+        restart: always
+        ports:
+            - 6379:6379
+
+    backend:
+        build: ./test_task
+        command: python manage.py runserver 0.0.0.0:8000
+        depends_on:
+            - db
+        ports:
+            - 8000:8000
+        volumes:
+            - ./test_task:/app
+
+    frontend:
+        build: ./frontend
+        depends_on:
+            - backend
+        ports:
+            - 8080:8080
+        volumes:
+            - ./frontend:/app
