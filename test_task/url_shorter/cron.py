@@ -19,8 +19,7 @@ class CleanShortenedLinksCronJob(CronJobBase):
         shortened_links = ShortenedLink.objects.filter(created_at__lt=datetime.now()-timedelta(minutes=5))
         for shortened_link in shortened_links:
             if redis_instance.exists(shortened_link.subpart):
-                print('delete: ', subpart)
-                redis_instance.delete(subpart)
+                redis_instance.delete(shortened_link.subpart)
 
         shortened_links.delete()
 

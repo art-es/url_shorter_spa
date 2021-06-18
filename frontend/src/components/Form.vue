@@ -60,7 +60,6 @@ export default {
       });
       const data = await response.json();
       this.shortened_link = data.shortened_link;
-      console.log("HERE-------")
       this.$emit('update-table-data');
     },
     async copy() {

@@ -40,7 +40,6 @@ def get_shortened_links(request):
     paginator = Paginator(shorten_links, 3)
     page_obj = paginator.get_page(page_number)
     serialized_shorten_links = [shorten_link.serialize() for shorten_link in page_obj]
-    print(serialized_shorten_links)
 
     return JsonResponse({
         'shortened_links': serialized_shorten_links,
