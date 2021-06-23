@@ -28,7 +28,13 @@ services:
 
     backend:
         build: ./test_task
-        command: python manage.py runserver 0.0.0.0:8000
+        environment:
+            - DB_HOST=db
+            - DB_PORT=3306
+            - DB_USER=root
+            - DB_PASSWORD=root
+            - DB_NAME=url_shorter
+            - DEBUG=true
         depends_on:
             - db
         ports:
@@ -44,3 +50,20 @@ services:
             - 8080:8080
         volumes:
             - ./frontend:/app
+
+    backend_test:
+        build: ./test_task
+        command: python manage.py test url_shorter.core.tests
+        environment:
+            - DB_HOST=db
+            - DB_PORT=3306
+            - DB_USER=root
+            - DB_PASSWORD=root
+            - DB_NAME=url_shorter
+        depends_on:
+            - db
+        ports:
+            - 8000:8000
+        volumes:
+            - ./test_task:/app
+        

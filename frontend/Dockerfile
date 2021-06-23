@@ -4,6 +4,6 @@ WORKDIR /app
 
 COPY . /app
 
-RUN npm ci
+RUN npm install
 
 CMD npm run serve

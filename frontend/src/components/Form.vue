@@ -45,6 +45,7 @@ export default {
     },
 
     async shorten_link() {
+      this.exception = "";
       const response = await fetch("http://127.0.0.1:8000/", {
         method: 'POST',
         mode: 'cors',
@@ -59,8 +60,14 @@ export default {
         }),
       });
       const data = await response.json();
-      this.shortened_link = data.shortened_link;
-      this.$emit('update-table-data');
+
+      if (response.status === 200) {
+        this.shortened_link = data.shortened_link;
+        this.$emit('update-table-data');
+      } else {
+        this.exception = data.exception.join("<br />");
+      }
+
     },
     async copy() {
       const shortened_link = this.$refs.shortened_link;

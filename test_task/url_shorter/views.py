@@ -1,24 +1,20 @@
-import django.contrib.sessions.backends.db
 import json
-from django.shortcuts import render, redirect, reverse, get_object_or_404
-from .models import ShortenedLink
-from django.http import HttpResponseRedirect, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from . import helper
+
 import redis
 from django.conf import settings
-from django.core.paginator import Paginator
-from django.views.decorators.http import require_http_methods
-from django.utils.decorators import method_decorator
-from .core.views import base_view
-from .core.exceptions import EmptyUrlException
 from django.http import JsonResponse
-import logging
+from django.shortcuts import redirect
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
+from .core.services import ShortenedLinksService
+from .core.views import base_view
 
-redis_instance = redis.StrictRedis(host=settings.REDIS_HOST,
-                                   port=settings.REDIS_PORT, 
-                                   db=0)
+redis_instance = redis.StrictRedis(
+    host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0
+)
+shortened_links_service = ShortenedLinksService()
+
 
 @require_http_methods(["GET", "POST"])
 @base_view
@@ -34,18 +30,18 @@ def shortened_links(request):
 
 def get_shortened_links(request):
     """Возвращает сокращенные ссылки для отображения в таблице"""
-    page_number = request.GET.get('page')
+    page_number = request.GET.get("page")
+    session_id = request.session.session_key
 
-    shorten_links = ShortenedLink.objects.filter(session_id=request.session.session_key).order_by('-created_at')
-    paginator = Paginator(shorten_links, 3)
-    page_obj = paginator.get_page(page_number)
-    serialized_shorten_links = [shorten_link.serialize() for shorten_link in page_obj]
+    paginated = shortened_links_service.get_by_page(page_number, session_id)
 
-    return JsonResponse({
-        'shortened_links': serialized_shorten_links,
-        'current_page': page_obj.number,
-        'total_pages': page_obj.paginator.num_pages,
-    })
+    return JsonResponse(
+        {
+            "shortened_links": paginated.items,
+            "current_page": paginated.current_page,
+            "total_pages": paginated.total_pages,
+        }
+    )
 
 
 def create_shortened_link(request):
@@ -54,28 +50,27 @@ def create_shortened_link(request):
         request.session.save()
 
     post_json = json.loads(request.body)
-    original_link = post_json.get('original_link')
-    subpart = post_json.get('subpart')
+    original_link = post_json.get("original_link")
+    subpart = post_json.get("subpart")
+    session_id = request.session.session_key
 
-    if not original_link:
-        logging.warning('URL is empty')
-        raise EmptyUrlException("URL is empty")
-        
-    shortened_link = helper.create_shorten_link(original_link, request.session.session_key, subpart = subpart)
+    shortened_links_service.validate(original_link, subpart)
+    shortened_link = shortened_links_service.create(original_link, session_id, subpart)
+
     return JsonResponse(
-        {'shortened_link': shortened_link, 'sessionid':request.session.session_key}, 
-        headers={'Set-Cookie': f'sessionid={request.session.session_key}'},
+        {"shortened_link": shortened_link, "sessionid": request.session.session_key},
+        headers={"Set-Cookie": f"sessionid={request.session.session_key}"},
     )
 
 
 @base_view
 def redirect_by_short_link(request, subpart):
     """Редирект по сокращенной ссылке"""
-    original_link = redis_instance.get(subpart)
-    if not original_link:
-        shortened_link = get_object_or_404(ShortenedLink, pk=subpart)
-        original_link = shortened_link.original_link
-        redis_instance.set(subpart, original_link, ex=6000)
+    cached_original_link = redis_instance.get(subpart)
+    if cached_original_link:
+        return redirect(cached_original_link.decode())
+
+    original_link = shortened_links_service.get_original_link(subpart)
+    redis_instance.set(subpart, original_link)
 
     return redirect(original_link)
-

@@ -2,51 +2,22 @@
 
 ## Установка
 
-### Загружаем зависимости frontend приложения
+### Запуск базы данных
 ```shell
-npm i
-# или 
-yarn
+make run-db
 ```
 
-### Запускаем docker контейнеры
+Запуск может занять некоторое время, статус можно проверить командой
 ```shell
-docker-compose up
+docker ps | grep db
 ```
 
-### Создаем виртуальное окружение
-
+### Запуск приложения
 ```shell
-python3.8 -m venv <venv_name>
+make run-app
 ```
 
-### Устанавливаем requirements
-
+### Запуск тестов
 ```shell
-pip install -r requirements.txt
-```
-
-Переходим в директорию test_task
-
-
-### Выполняем миграции
-
-```shell
-python manage.py migrate --database migration
-```
-
-### Если возникли проблемы с зависимостями, то можно зайти внутрь контейнера и выполнить миграции в нем
-
-1. Получить id контейнера(первый столбец)
-```shell
-docker ps | grep url_shorter_spa_backend
-```
-2. Выполнить команду для захода в терминал в контейнере
-
-```shell
-docker exec -it <ID> sh
-```
-3. Выполнить миграции 
-```shell
-python manage.py migrate
+make run-test
 ```
