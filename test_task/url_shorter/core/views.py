@@ -26,7 +26,7 @@ def base_view(fn):
     def inner(requests, *args, **kwargs):
         try:
             return fn(requests, *args, **kwargs)
-        except (EmptyUrlException, SubpartAlreadyExistsException, ValidationError) as e:
+        except ValidationError as e:
             logging.debug(str(e))
             return error_response(e, 400)
         except Exception as e:

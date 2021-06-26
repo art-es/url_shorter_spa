@@ -10,7 +10,7 @@ from ..validators import validate_subpart, validate_url
 
 
 class ShortenedLinksPaginatedList:
-    def __init__(self, query_set, page):
+    def __init__(self, query_set, page:int):
         page_object = Paginator(query_set, settings.OBJECTS_COUNT_IN_PAGE).get_page(
             page
         )
@@ -36,7 +36,7 @@ class ShortenedLinksService:
                 logging.warning(f"subpart {subpart} alredy exists")
                 raise SubpartAlreadyExistsException("such subpart alredy exists")
 
-    def create(self, original_link, session_id, subpart=None):
+    def create(self, original_link: str, session_id: str, subpart=None):
         subpart = subpart or get_random_string(length=settings.SUBPART_LENGTH)
 
         shortened_link = ShortenedLink(
@@ -47,7 +47,7 @@ class ShortenedLinksService:
         logging.info(f"create shortened link {shortened_link.get_full_link()}")
         return shortened_link.get_full_link()
 
-    def get_original_link(self, subpart):
+    def get_original_link(self, subpart: str):
         shortened_link = get_object_or_404(ShortenedLink, pk=subpart)
 
         return shortened_link.original_link
@@ -57,5 +57,5 @@ class ShortenedLinksService:
             "-created_at"
         )
 
-    def _exists(self, subpart):
+    def _exists(self, subpart: str):
         return ShortenedLink.objects.filter(pk=subpart).exists()
